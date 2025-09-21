@@ -8,6 +8,7 @@ from .controllers import AppController
 
 try:  # pragma: no cover - optional dependency
     from kivy.metrics import dp
+    from kivy.properties import StringProperty
     from kivymd.app import MDApp
     from kivymd.uix.boxlayout import MDBoxLayout
     from kivymd.uix.button import MDRaisedButton
@@ -32,9 +33,21 @@ else:
 
     class _Tab(MDBoxLayout, MDTabsBase):
         """Simple helper combining box layout with tab capabilities."""
+        # KivyMD 1.2.0 oczekuje title albo icon; dodajemy obie właściwości.
+        title = StringProperty("")
+        icon = StringProperty("")
+        # Opcjonalnie utrzymujemy też 'text' dla wstecznej zgodności,
+        # gdyby gdzieś była użyta. Jeśli 'text' zostanie ustawione,
+        # przepisz je do 'title'.
+        text = StringProperty("")
 
         def __init__(self, **kwargs) -> None:
             super().__init__(orientation="vertical", padding=dp(16), spacing=dp(12), **kwargs)
+            # Synchronizacja: jeżeli ktoś ustawi text zamiast title, skopiuj do title.
+            if not self.title and self.text:
+                self.title = self.text
+            # Gdy text się zmieni w locie – aktualizuj title, o ile title nie jest jawnie ustawione.
+            self.bind(text=lambda *_: setattr(self, "title", self.text) if not self.title else None)
 
 
     class NutritionPlannerApp(MDApp):
@@ -74,15 +87,15 @@ else:
             screen.add_widget(tabs)
 
             ration_tab = self._build_ration_tab()
-            ration_tab.text = "Dawka pokarmowa"
+            ration_tab.title = "Dawka pokarmowa"
             tabs.add_widget(ration_tab)
 
             herd_tab = self._build_herd_tab()
-            herd_tab.text = "Panel hodowcy"
+            herd_tab.title = "Panel hodowcy"
             tabs.add_widget(herd_tab)
 
             saved_tab = self._build_saved_tab()
-            saved_tab.text = "Zapisane dawki"
+            saved_tab.title = "Zapisane dawki"
             tabs.add_widget(saved_tab)
 
             return screen
